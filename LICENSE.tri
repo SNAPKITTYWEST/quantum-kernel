@@ -1,0 +1,60 @@
+TRIPLE LICENSE NOTICE
+=====================
+
+This software is tri-licensed. You may choose ONE of the following licenses:
+
+1. Business Source License 1.1 (BSL-1.1)
+2. GNU Affero General Public License v3.0 (AGPL-3.0)
+3. Mozilla Public License 2.0 (MPL-2.0)
+
+Select the license that best fits your use case. If in doubt, the BSL-1.1
+applies by default for commercial use; AGPL-3.0 for network services;
+MPL-2.0 for file-level copyleft integration.
+
+================================================================================
+LICENSE 1: Business Source License 1.1
+================================================================================
+
+Parameters:
+  Licensor:            Jessica L. Williams / SNAPKITTYWEST
+  Licensed Work:       Quantum Kernel (all files in this repository)
+  Change Date:         2030-08-21
+  Change License:      Apache License 2.0
+
+The Licensed Work is provided under the terms of the Business Source License 1.1.
+Use of the Licensed Work for production use is subject to the Additional Use Grant.
+
+Additional Use Grant: You may use the Licensed Work in production provided that
+your use does not include offering the Licensed Work as a hosted inference service
+to third parties (i.e., you may not host this as a commercial quantum kernel API).
+
+On the Change Date, the Licensed Work will be made available under the Change
+License (Apache 2.0).
+
+================================================================================
+LICENSE 2: GNU Affero General Public License v3.0 (AGPL-3.0)
+================================================================================
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+Full text: https://www.gnu.org/licenses/agpl-3.0.html
+
+================================================================================
+LICENSE 3: Mozilla Public License 2.0 (MPL-2.0)
+================================================================================
+
+This Source Code Form is subject to the terms of the Mozilla Public License,
+v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain
+one at https://mozilla.org/MPL/2.0/.
+
+================================================================================
+
+Copyright (C) 2026 Jessica L. Williams / SNAPKITTYWEST
+All rights reserved under the selected license.
