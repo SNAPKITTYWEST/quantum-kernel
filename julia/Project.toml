@@ -1,0 +1,7 @@
+[deps]
+Yao = "0.8"
+YaoBlocks = "0.13"
+HTTP = "1.10"
+JSON3 = "1.14"
+LinearAlgebra = "stdlib"
+Random = "stdlib"
