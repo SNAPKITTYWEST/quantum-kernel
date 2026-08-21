@@ -154,6 +154,36 @@ True randomness from vacuum fluctuations for Pauli basis selection. Not PRNG. No
 
 ---
 
+## Topological Extension: TDA → Braid → Lattice Surgery
+
+```
+Classical Data (R^d)
+    |
+    v
+[TDA] Vietoris-Rips → Persistence Barcodes (H0, H1)
+    |
+    v
+[BRAID MAP] H1 intervals → Artin generators σ_i on heavy-hex edges
+    |
+    v
+[MARKOV MOVES] Free reduction + Garside normal form + braid relations
+    |
+    v
+[LATTICE SURGERY] Defect braiding → CZ via smooth/rough merge/split
+    |
+    v
+[HERON NATIVE] σ_i → H·CX·H·CX·H sequences (RZ/SX/CX only)
+```
+
+Novel contributions:
+- **Persistence-to-braid mapping**: H1 topological features directly encode as Artin generators
+- **Differentiable braids**: Gumbel-Softmax over generator logits for gradient-based optimization
+- **Heavy-hex braid generators**: Physical qubit connectivity constrains the braid group
+- **Markov loss**: Braid word length + gate count penalty for topological circuit compression
+- **Burau representation**: Jones polynomial verification at e^{2πi/5} for knot invariants
+
+---
+
 ## Key Properties
 
 - **Feature map unitarity**: U^dag * U = I (by construction)
@@ -162,6 +192,7 @@ True randomness from vacuum fluctuations for Pauli basis selection. Not PRNG. No
 - **Concentration**: P(|K_hat - K| > eps) <= 2*exp(-2*shots*eps^2)
 - **Entanglement necessity**: without CZ layer, reduces to classical product kernel
 - **Heavy-hex native**: all 2-qubit gates on physically connected qubits only
+- **Topological protection**: Braid encoding is robust to local noise (non-Abelian anyons)
 
 ---
 
@@ -195,10 +226,16 @@ quantum-kernel/
 │   ├── main.go            # 5-qubit hello world
 │   └── go.mod
 ├── julia/                  # Yao.jl circuit construction + IR lowering
+│   ├── yao_types.jl       # Type system + topological types (BraidWord, DefectTracker)
 │   ├── yao_kernel.jl      # Full DFE kernel circuit generation
-│   ├── yao_types.jl       # Standalone Yao-compatible type system
 │   ├── yao_circuit.jl     # Statevector simulation (zero deps)
 │   ├── yao_to_ir.jl       # Block tree → QuantumIR flattening
+│   ├── tda_features.jl    # Vietoris-Rips → persistence barcodes
+│   ├── tda_braid_map.jl   # Barcodes → BraidWord on heavy-hex
+│   ├── braid_diff.jl      # Differentiable Artin generators
+│   ├── markov_moves.jl    # Braid simplification + canonical form
+│   ├── lattice_surgery.jl # CZ ↔ smooth/rough defects
+│   ├── braid_kernel_integration.jl # Braid feature map + VQC
 │   ├── quantum_kernel.jl  # Feature map + kernel computation
 │   ├── qir_to_openqasm3.jl # MetaQASM compiler (Julia)
 │   └── Project.toml

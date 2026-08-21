@@ -1,4 +1,4 @@
-# yao_types.jl — Core Yao.jl block hierarchy (minimal, no external deps)
+# yao_types.jl — Core Yao.jl block hierarchy + Topological types
 
 module YaoTypes
 
@@ -11,11 +11,6 @@ using LinearAlgebra
 abstract type AbstractBlock end
 abstract type CompositeBlock <: AbstractBlock end
 
-"""
-    PrimitiveGate
-
-Leaf node: a named gate with parameters and a known matrix.
-"""
 struct PrimitiveGate <: AbstractBlock
     name::String
     params::Vector{Float64}
@@ -23,43 +18,23 @@ struct PrimitiveGate <: AbstractBlock
     mat::Matrix{ComplexF64}
 end
 
-"""
-    ChainBlock
-
-Sequential composition: blocks applied left-to-right.
-"""
 struct ChainBlock <: CompositeBlock
     nqubits::Int
     blocks::Vector{AbstractBlock}
 end
 
-"""
-    KronBlock
-
-Parallel (tensor product) composition: blocks applied simultaneously on disjoint qubits.
-"""
 struct KronBlock <: CompositeBlock
     nqubits::Int
     locs::Vector{Int}
     blocks::Vector{AbstractBlock}
 end
 
-"""
-    PutBlock
-
-Place a block on specific qubits.
-"""
 struct PutBlock <: CompositeBlock
     nqubits::Int
     locs::Vector{Int}
     block::AbstractBlock
 end
 
-"""
-    ControlBlock
-
-Controlled application of a block.
-"""
 struct ControlBlock <: CompositeBlock
     nqubits::Int
     ctrl_locs::Vector{Int}
@@ -67,26 +42,84 @@ struct ControlBlock <: CompositeBlock
     block::AbstractBlock
 end
 
-"""
-    MeasureBlock
-
-Mid-circuit measurement.
-"""
 struct MeasureBlock <: AbstractBlock
     nqubits::Int
     locs::Vector{Int}
 end
 
 # ═══════════════════════════════════════════════════════════════════════
-# Accessors
+# TOPOLOGICAL TYPES: Braids, Defects, Anyons
+# ═══════════════════════════════════════════════════════════════════════
+
+struct BraidWord
+    generators::Vector{Int}
+    edge_indices::Vector{Int}
+    n_strands::Int
+
+    function BraidWord(gens::Vector{Int}, edges::Vector{Int}, n_strands::Int)
+        @assert length(gens) == length(edges)
+        new(gens, edges, n_strands)
+    end
+end
+
+BraidWord(n_strands::Int) = BraidWord(Int[], Int[], n_strands)
+
+struct DefectPair
+    id::String
+    anyon_type::Symbol
+    smooth_defect::Tuple{Int,Int}
+    rough_defect::Tuple{Int,Int}
+    braid_trajectory::Vector{Tuple{Int,Int}}
+end
+
+mutable struct DefectTracker
+    defects::Dict{String, DefectPair}
+    fusion_rules::Dict{Tuple{Symbol,Symbol}, Vector{Symbol}}
+    lattice_size::Tuple{Int,Int}
+    time_step::Int
+
+    function DefectTracker(lattice_size::Tuple{Int,Int}=(20,20))
+        rules = Dict(
+            (:fibonacci, :fibonacci) => [:vacuum, :fibonacci],
+            (:ising, :ising) => [:vacuum, :fermion],
+            (:toric, :toric) => [:vacuum],
+        )
+        new(Dict{String, DefectPair}(), rules, lattice_size, 0)
+    end
+end
+
+struct LatticeSurgeryOp
+    op_type::Symbol
+    defect_ids::Vector{String}
+    basis::Symbol
+    ancilla_id::Union{String, Nothing}
+end
+
+function allocate_defect_pair!(tracker::DefectTracker, id::String, anyon_type::Symbol,
+                                smooth_pos::Tuple{Int,Int}, rough_pos::Tuple{Int,Int})
+    pair = DefectPair(id, anyon_type, smooth_pos, rough_pos, [smooth_pos, rough_pos])
+    tracker.defects[id] = pair
+    return pair
+end
+
+function braid_defects!(tracker::DefectTracker, id1::String, id2::String, direction::Int)
+    d1 = tracker.defects[id1]
+    d2 = tracker.defects[id2]
+    new_traj1 = vcat(d1.braid_trajectory, [d2.rough_defect])
+    new_traj2 = vcat(d2.braid_trajectory, [d1.rough_defect])
+    tracker.defects[id1] = DefectPair(d1.id, d1.anyon_type, d1.smooth_defect,
+                                       d2.rough_defect, new_traj1)
+    tracker.defects[id2] = DefectPair(d2.id, d2.anyon_type, d2.smooth_defect,
+                                       d1.rough_defect, new_traj2)
+    tracker.time_step += 1
+end
+
+# ═══════════════════════════════════════════════════════════════════════
+# Accessors & Constructors
 # ═══════════════════════════════════════════════════════════════════════
 
 nqubits(b::AbstractBlock) = b.nqubits
 nqubits(b::PrimitiveGate) = b.nqubits
-
-# ═══════════════════════════════════════════════════════════════════════
-# Primitive Gate Constructors (Heron-native: RZ, SX, CX)
-# ═══════════════════════════════════════════════════════════════════════
 
 const SQRT2 = sqrt(2.0)
 const IM = ComplexF64(0, 1)
@@ -107,10 +140,6 @@ Rz(θ) = PrimitiveGate("Rz", [θ], 1, ComplexF64[exp(-IM*θ/2) 0; 0 exp(IM*θ/2)
 
 CNOT() = PrimitiveGate("CX", Float64[], 2, ComplexF64[1 0 0 0; 0 1 0 0; 0 0 0 1; 0 0 1 0])
 CZ() = PrimitiveGate("CZ", Float64[], 2, ComplexF64[1 0 0 0; 0 1 0 0; 0 0 1 0; 0 0 0 -1])
-
-# ═══════════════════════════════════════════════════════════════════════
-# Composite Block Constructors
-# ═══════════════════════════════════════════════════════════════════════
 
 function chain(nq::Int, blocks::AbstractBlock...)
     ChainBlock(nq, collect(blocks))
@@ -133,7 +162,7 @@ control(nq::Int, ctrl_locs::Vector{Int}, block::AbstractBlock) = ControlBlock(nq
 measure(nq::Int, locs::Vector{Int}) = MeasureBlock(nq, locs)
 
 # ═══════════════════════════════════════════════════════════════════════
-# Heron-Native Decompositions
+# Heron-Native Decomposition
 # ═══════════════════════════════════════════════════════════════════════
 
 function decompose_to_heron(block::AbstractBlock)::AbstractBlock
@@ -183,14 +212,14 @@ function _decompose_primitive(g::PrimitiveGate)::AbstractBlock
     elseif name == "Tdg"
         return Rz(-π/4)
     elseif name == "CZ"
-        return g # Emitter expands: H(t) · CX(c,t) · H(t)
+        return g
     else
         return g
     end
 end
 
 # ═══════════════════════════════════════════════════════════════════════
-# Feature Map Parameter Container
+# Feature Map Parameters
 # ═══════════════════════════════════════════════════════════════════════
 
 struct FeatureMapParams
@@ -208,20 +237,16 @@ Base.getindex(p::FeatureMapParams, i...) = p.data[i...]
 Base.setindex!(p::FeatureMapParams, v, i...) = (p.data[i...] = v)
 Base.size(p::FeatureMapParams) = size(p.data)
 Base.length(p::FeatureMapParams) = length(p.data)
+Base.eachindex(p::FeatureMapParams) = eachindex(p.data)
 
 # ═══════════════════════════════════════════════════════════════════════
-# Pauli String (for DFE + VQC observables)
+# Pauli String & Heavy-Hex Topology
 # ═══════════════════════════════════════════════════════════════════════
 
 struct PauliString
     paulis::Vector{Char}
 end
-
 PauliString(n::Int) = PauliString(rand(['I','X','Y','Z'], n))
-
-# ═══════════════════════════════════════════════════════════════════════
-# Heavy-Hex Topology (IBM Heron r3 subset)
-# ═══════════════════════════════════════════════════════════════════════
 
 const HERON_EDGES_0 = [
     (0, 1), (1, 2),
@@ -230,6 +255,8 @@ const HERON_EDGES_0 = [
     (3, 7), (4, 7), (4, 8), (5, 8), (5, 9), (6, 9),
     (7, 8), (8, 9)
 ]
+
+const HERON_EDGE_INDEX = Dict(edge => i for (i, edge) in enumerate(HERON_EDGES_0))
 
 # ═══════════════════════════════════════════════════════════════════════
 # Exports
@@ -241,6 +268,8 @@ export H, X, Y, Z, S, Sdg, T, Tdg, SX, Rx, Ry, Rz, CNOT, CZ
 export chain, kron, put, control, measure
 export decompose_to_heron
 export FeatureMapParams, PauliString
-export HERON_EDGES_0
+export HERON_EDGES_0, HERON_EDGE_INDEX
+export BraidWord, DefectPair, DefectTracker, LatticeSurgeryOp
+export allocate_defect_pair!, braid_defects!
 
 end # module YaoTypes
