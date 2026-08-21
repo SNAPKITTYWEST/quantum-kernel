@@ -13,7 +13,7 @@
 
 ## Demo
 
-https://github.com/user-attachments/assets/quantum-kernel-demo.mp4
+![Quantum Kernel Engine Demo](demo.gif)
 
 > 5-qubit quantum kernel executing in sandbox: feature map encoding, SWAP test with shot noise, SVM training, classification output. Built on a phone, runs anywhere.
 
