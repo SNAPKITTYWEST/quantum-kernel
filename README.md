@@ -81,14 +81,10 @@ cd julia && julia --project=. -e 'using Pkg; Pkg.instantiate()' && julia quantum
 python3 python/qir_to_openqasm3.py kernel_ir.json kernel.qasm3 1.0 1.5 2.0 3.0
 ```
 
-### Submit to IBM Heron (real hardware)
+### Full Pipeline (Yao → IR → QASM3)
 ```bash
-qiskit-ibm-runtime submit \
-  --backend ibm_brisbane \
-  --shots 10000 \
-  --dynamic-circuits \
-  --zne-factors 1.0,1.5,2.0,3.0 \
-  kernel.qasm3
+cd julia && julia --project=. yao_kernel.jl    # Generate kernel circuits + QuantumIR
+julia --project=. qir_to_openqasm3.jl kernel_ir.json kernel.qasm3 1.0 1.5 2.0 3.0
 ```
 
 ---
@@ -199,6 +195,10 @@ quantum-kernel/
 │   ├── main.go            # 5-qubit hello world
 │   └── go.mod
 ├── julia/                  # Yao.jl circuit construction + IR lowering
+│   ├── yao_kernel.jl      # Full DFE kernel circuit generation
+│   ├── yao_types.jl       # Standalone Yao-compatible type system
+│   ├── yao_circuit.jl     # Statevector simulation (zero deps)
+│   ├── yao_to_ir.jl       # Block tree → QuantumIR flattening
 │   ├── quantum_kernel.jl  # Feature map + kernel computation
 │   ├── qir_to_openqasm3.jl # MetaQASM compiler (Julia)
 │   └── Project.toml
